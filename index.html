@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Protocolo Broca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0d0f;
+  --panel:#17181c;
+  --panel2:#1f2126;
+  --border:#2b2d33;
+  --ember:#e2711d;
+  --ember-dim:#5b3a1f;
+  --ember-glow:rgba(226,113,29,0.35);
+  --text:#e9e7e2;
+  --text-dim:#8b8d93;
+  --success:#4f9d5c;
+  --danger:#c1443c;
+  --locked:#3a3c42;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  padding-bottom:72px;
+  background-image:
+    radial-gradient(ellipse at top, rgba(226,113,29,0.06), transparent 55%);
+}
+h1,h2,h3,.display{font-family:'Teko',sans-serif;font-weight:600;letter-spacing:0.02em;line-height:1;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+
+/* HEADER */
+header.top{
+  padding:18px 16px 14px;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:20;
+  background:linear-gradient(180deg,#0c0d0f 85%, rgba(12,13,15,0.85));
+  backdrop-filter:blur(6px);
+}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.brand-title{font-size:30px;color:var(--text);display:flex;align-items:center;gap:8px;}
+.brand-title .spark{color:var(--ember);}
+.level-pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--panel2);border:1px solid var(--border);
+  border-radius:20px;padding:6px 12px;
+  font-family:'Teko',sans-serif;font-size:18px;color:var(--ember);
+  text-transform:uppercase;letter-spacing:0.06em;
+}
+.level-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ember);box-shadow:0 0 8px var(--ember-glow);}
+
+/* NAV */
+nav.tabs{
+  display:flex;gap:4px;overflow-x:auto;padding:10px 12px 0;
+  scrollbar-width:none;
+}
+nav.tabs::-webkit-scrollbar{display:none;}
+nav.tabs button{
+  flex:0 0 auto;
+  background:none;border:none;color:var(--text-dim);
+  font-family:'Teko',sans-serif;font-size:17px;letter-spacing:0.04em;
+  padding:8px 12px 12px;cursor:pointer;text-transform:uppercase;
+  border-bottom:3px solid transparent;
+  white-space:nowrap;
+}
+nav.tabs button.active{color:var(--ember);border-bottom-color:var(--ember);}
+
+main{padding:16px;max-width:640px;margin:0 auto;}
+.section{display:none;}
+.section.active{display:block;animation:fadein .25s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+.card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:10px;padding:16px;margin-bottom:14px;
+}
+.card h3{font-size:22px;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.03em;}
+.card h3 .n{color:var(--ember);margin-right:6px;}
+.muted{color:var(--text-dim);font-size:14px;line-height:1.5;}
+p.body{font-size:14.5px;line-height:1.6;color:#c9c7c2;margin-top:4px;}
+ul.plain{list-style:none;margin-top:6px;}
+ul.plain li{font-size:14.5px;line-height:1.7;color:#c9c7c2;padding-left:14px;position:relative;}
+ul.plain li::before{content:"—";position:absolute;left:0;color:var(--ember);}
+
+/* accordion */
+.acc-item{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;background:var(--panel);}
+.acc-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 16px;cursor:pointer;
+}
+.acc-head h3{font-size:19px;margin:0;}
+.acc-head .idx{color:var(--ember);font-family:'IBM Plex Mono';font-size:13px;margin-right:8px;}
+.acc-arrow{color:var(--text-dim);transition:transform .2s;font-size:14px;}
+.acc-item.open .acc-arrow{transform:rotate(180deg);color:var(--ember);}
+.acc-body{max-height:0;overflow:hidden;transition:max-height .3s ease;padding:0 16px;}
+.acc-item.open .acc-body{padding-bottom:14px;}
+
+/* gauge / level tracker */
+.gauge-row{margin-bottom:18px;}
+.gauge-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.gauge-label .name{font-family:'Teko';font-size:18px;letter-spacing:0.03em;color:var(--text);text-transform:uppercase;}
+.gauge-label .val{font-family:'IBM Plex Mono';font-size:12.5px;color:var(--text-dim);}
+.gauge-track{
+  display:flex;gap:3px;height:14px;
+}
+.gauge-seg{flex:1;background:var(--locked);border-radius:2px;position:relative;overflow:hidden;}
+.gauge-seg.done{background:var(--ember);box-shadow:0 0 10px var(--ember-glow);}
+.gauge-seg.current{background:linear-gradient(90deg,var(--ember),var(--ember-dim));}
+.gauge-levels{display:flex;gap:3px;margin-top:4px;}
+.gauge-levels span{flex:1;text-align:center;font-size:9.5px;color:var(--text-dim);font-family:'IBM Plex Mono';text-transform:uppercase;}
+
+.overall-badge{
+  text-align:center;padding:22px 10px;border:1px solid var(--border);
+  border-radius:12px;background:radial-gradient(ellipse at top, rgba(226,113,29,0.1), var(--panel2));
+  margin-bottom:18px;
+}
+.overall-badge .lvl{font-family:'Teko';font-size:46px;color:var(--ember);text-transform:uppercase;letter-spacing:0.03em;}
+.overall-badge .sub{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+.overall-badge .bottleneck{margin-top:10px;font-size:12.5px;color:var(--text-dim);}
+.overall-badge .bottleneck b{color:var(--ember);}
+
+/* inputs */
+label.field{display:block;margin-bottom:12px;}
+label.field .lbl{display:block;font-size:12.5px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;}
+input,select{
+  width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  padding:10px 12px;border-radius:8px;font-size:15px;font-family:'IBM Plex Mono',monospace;
+}
+input:focus,select:focus{outline:none;border-color:var(--ember);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+
+.btn{
+  display:inline-block;width:100%;text-align:center;
+  background:var(--ember);color:#1a1004;font-family:'Teko';font-size:19px;
+  letter-spacing:0.04em;text-transform:uppercase;border:none;border-radius:8px;
+  padding:12px;cursor:pointer;margin-top:4px;
+}
+.btn.secondary{background:none;border:1px solid var(--border);color:var(--text-dim);}
+.btn:active{transform:scale(0.98);}
+
+/* history list */
+.hist-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--border);font-size:13.5px;
+}
+.hist-row:last-child{border-bottom:none;}
+.hist-row .date{color:var(--text-dim);font-family:'IBM Plex Mono';font-size:12px;}
+.hist-row .exercise{color:var(--text);}
+.hist-row .metric{color:var(--ember);font-family:'IBM Plex Mono';}
+.hist-empty{color:var(--text-dim);font-size:13.5px;text-align:center;padding:16px 0;}
+
+/* program */
+.program-select{display:flex;gap:8px;margin-bottom:16px;}
+.chip{
+  flex:1;text-align:center;padding:9px 6px;border:1px solid var(--border);
+  border-radius:8px;font-family:'Teko';font-size:16px;text-transform:uppercase;
+  color:var(--text-dim);cursor:pointer;letter-spacing:0.03em;
+}
+.chip.active{border-color:var(--ember);color:var(--ember);background:rgba(226,113,29,0.08);}
+.day-card{border:1px solid var(--border);border-radius:10px;margin-bottom:12px;background:var(--panel);}
+.day-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+}
+.day-head .letter{font-family:'Teko';font-size:24px;color:var(--ember);}
+.day-head .tag{font-size:11.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;}
+.day-check{width:22px;height:22px;border-radius:5px;border:1.5px solid var(--border);cursor:pointer;flex:0 0 auto;}
+.day-check.checked{background:var(--ember);border-color:var(--ember);position:relative;}
+.day-check.checked::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#1a1004;font-size:14px;font-weight:700;}
+.ex-row{display:flex;justify-content:space-between;padding:10px 16px;font-size:14px;border-bottom:1px solid var(--border);}
+.ex-row:last-child{border-bottom:none;}
+.ex-row .exn{color:var(--text);}
+.ex-row .exs{color:var(--text-dim);font-family:'IBM Plex Mono';font-size:13px;}
+
+/* hiit */
+.hiit-card{border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;background:var(--panel);}
+.hiit-card h3{font-size:19px;color:var(--ember);text-transform:uppercase;}
+.hiit-format{
+  display:flex;gap:10px;margin:10px 0;
+}
+.hiit-format div{
+  flex:1;background:var(--panel2);border-radius:8px;padding:10px;text-align:center;
+}
+.hiit-format .num{font-family:'Teko';font-size:26px;color:var(--ember);}
+.hiit-format .lbl{font-size:10.5px;color:var(--text-dim);text-transform:uppercase;}
+
+/* calendar */
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.cal-head button{background:none;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 12px;font-size:16px;cursor:pointer;}
+.cal-head .month{font-family:'Teko';font-size:22px;text-transform:uppercase;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-dow{text-align:center;font-size:10px;color:var(--text-dim);padding-bottom:4px;text-transform:uppercase;}
+.cal-day{
+  aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:6px;background:var(--panel2);font-size:12px;color:var(--text-dim);cursor:pointer;
+  position:relative;border:1px solid transparent;
+}
+.cal-day.empty{background:none;cursor:default;}
+.cal-day .dots{display:flex;gap:2px;margin-top:2px;position:absolute;bottom:4px;}
+.cal-day .dot{width:5px;height:5px;border-radius:50%;}
+.cal-day .dot.forca{background:var(--ember);}
+.cal-day .dot.hiit{background:#5b9de0;}
+.cal-legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-dim);}
+.cal-legend span{display:flex;align-items:center;gap:6px;}
+.cal-legend .dot{width:8px;height:8px;border-radius:50%;}
+
+.section-title{font-size:26px;text-transform:uppercase;margin-bottom:4px;}
+.section-sub{color:var(--text-dim);font-size:13px;margin-bottom:16px;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="brand-title"><span class="spark">⛏</span> PROTOCOLO BROCA</div>
+    <div class="level-pill"><span class="dot"></span><span id="headerLevel">RECRUTA</span></div>
+  </div>
+  <nav class="tabs" id="tabNav">
+    <button data-tab="guia" class="active">Guia</button>
+    <button data-tab="nivel">Nível</button>
+    <button data-tab="testes">Testes</button>
+    <button data-tab="treino">Treino</button>
+    <button data-tab="cargas">Cargas</button>
+    <button data-tab="hiit">HIIT</button>
+    <button data-tab="calendario">Calendário</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ================= GUIA ================= -->
+<section class="section active" id="sec-guia">
+  <div class="section-title">Guia de Referência</div>
+  <div class="section-sub">Os pontos que não podem ser esquecidos.</div>
+
+  <div class="acc-item open">
+    <div class="acc-head"><h3><span class="idx">01</span>Mentalidade</h3><span class="acc-arrow">▾</span></div>
+    <div class="acc-body">
+      <p class="body">BROCA não é treino, é mentalidade. O corpo é uma ferramenta — existe para funcionar, não para ser admirado. Estética é consequência da função, nunca o objetivo. Treinar só pelo espelho cria corpos que parecem fortes e são frágeis na vida real.</p>
+    </div>
+  </div>
+
+  <div class="acc-item">
+    <div class="acc-head"><h3><span class="idx">02</span>Força de verdade = 3 pilares</h3><span class="acc-arrow">▾</span></div>
+    <div class="acc-body">
+      <ul class="plain">
+        <li><b>Força absoluta</b> — capacidade de levantar carga externa pesada. Cria reserva física.</li>
+        <li><b>Força relativa</b> — capacidade de mover o próprio corpo. É autonomia, sem desculpa.</li>
+        <li><b>Condicionamento</b> — sustentar esforço quando o corpo quer parar. Sem gás, a força morre rápido.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="acc-item">
+    <div class="acc-head"><h3><span class="idx">03</span>O corpo como sistema</h3><span class="acc-arrow">▾</span></div>
+    <div class="acc-body">
+      <ul class="plain">
+        <li><b>Tronco</b> — a interface com o mundo: empurrar, puxar, segurar.</li>
+        <li><b>Core</b> — o elo que transfere força das pernas pro tronco. Fraco = potência se perde.</li>
+        <li><b>Inferiores</b> — a base. Sem pernas fortes, não existe força real.</li>
+      </ul>
+      <p class="body">Um único setor fraco compromete o corpo inteiro. Nunca treine por músculo isolado — treine por função.</p>
+    </div>
+  </div>
+
+  <div class="acc-item">
+    <div class="acc-head"><h3><span class="idx">04</span>Os 10 construtores</h3><span class="acc-arrow">▾</span></div>
+    <div class="acc-body">
+      <ul class="plain">
+        <li>Supino reto — empurrada de tronco</li>
+        <li>Barra fixa — puxada relativa</li>
+        <li>Paralelas — empurrada relativa</li>
+        <li>Agachamento livre — base de inferiores</li>
+        <li>Levantamento terra — força absoluta pura</li>
+        <li>Desenvolvimento de ombros — empurrada vertical</li>
+        <li>Remada curvada — puxada absoluta</li>
+        <li>Stiff — cadeia posterior</li>
+      </ul>
+      <p class="body">Poucos exercícios, bem escolhidos, com constância — não dezenas de variações.</p>
+    </div>
+  </div>
+
+  <div class="acc-item">
+    <div class="acc-head"><h3><span class="idx">05</span>Intensidade e descanso</h3><span class="acc-arrow">▾</span></div>
+    <div class="acc-body">
+      <ul class="plain">
+        <li>Compostos pesados (agacho, terra, supino): 3min+ de descanso</li>
+        <li>Auxiliares/isolados: 1–2min de descanso</li>
+        <li>Intensidade é carga com controle, não velocidade nem exaustão</li>
+        <li>Cansaço não é métrica de evolução. Força é.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="acc-item">
+    <div class="acc-head"><h3><span class="idx">06</span>Constância</h3><span class="acc-arrow">▾</span></div>
+    <div class="acc-body">
+      <p class="body">Força se constrói em anos, não semanas. Trocar de treino toda hora impede o corpo de consolidar padrão. Manter os mesmos exercícios-base e a mesma direção é o que separa quem fica forte de quem só treina.</p>
+    </div>
+  </div>
+
+  <div class="acc-item">
+    <div class="acc-head"><h3><span class="idx">07</span>Progressão sem ego</h3><span class="acc-arrow">▾</span></div>
+    <div class="acc-body">
+      <ul class="plain">
+        <li>O padrão de execução vem antes da carga</li>
+        <li>Ciclo prático: 5 reps → progride até 8 reps sólidas → sobe carga → volta pra 5</li>
+        <li>Se a carga sobe e o corpo colapsa, foi ego, não progresso</li>
+        <li>Lesão recorrente não é "parte do processo" — é erro de carga ou de ego</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="acc-item">
+    <div class="acc-head"><h3><span class="idx">08</span>Fora da academia</h3><span class="acc-arrow">▾</span></div>
+    <div class="acc-body">
+      <p class="body">Treino é só uma fatia da pizza da performance. As outras fatias: alimentação, sono, sol, rotina e gestão de estresse. Falta uma, o todo sofre — não existe treino pesado que compense sono ruim ou comida vazia.</p>
+    </div>
+  </div>
+
+  <div class="acc-item">
+    <div class="acc-head"><h3><span class="idx">09</span>Ser Broca</h3><span class="acc-arrow">▾</span></div>
+    <div class="acc-body">
+      <p class="body">O corpo reflete exatamente o que você exige dele. Ser forte é responsabilidade — com o próprio corpo, com quem depende de você, com a vida que você escolheu viver. Não é sobre ego. É sobre decisão diária.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= NIVEL ================= -->
+<section class="section" id="sec-nivel">
+  <div class="section-title">Painel de Nível</div>
+  <div class="section-sub">Só sobe quando os 6 exercícios passam juntos.</div>
+
+  <div class="overall-badge">
+    <div class="lvl" id="overallLevel">RECRUTA</div>
+    <div class="sub">Nível atual — baseado no último teste registrado</div>
+    <div class="bottleneck" id="bottleneckText">Faça seu primeiro teste na aba Testes.</div>
+  </div>
+
+  <label class="field">
+    <span class="lbl">Seu peso corporal (kg) — usado pra calcular agacho/terra em xBW</span>
+    <input type="number" id="bwInput" placeholder="ex: 80" step="0.1">
+  </label>
+
+  <div class="card" id="gaugesCard">
+    <h3><span class="n">//</span>Progresso por exercício</h3>
+    <div id="gaugesWrap"></div>
+  </div>
+
+  <div class="card">
+    <h3><span class="n">//</span>Requisitos completos por nível</h3>
+    <p class="muted" style="margin-bottom:10px;">Barra fixa · Paralelas · Agacho (xBW) · Terra (xBW) · Rodinha · Farmer hold</p>
+    <div id="reqTable"></div>
+  </div>
+</section>
+
+<!-- ================= TESTES ================= -->
+<section class="section" id="sec-testes">
+  <div class="section-title">Teste Broca</div>
+  <div class="section-sub">Reteste a cada 8–12 semanas, sempre descansado.</div>
+
+  <div class="card">
+    <h3><span class="n">//</span>Registrar novo teste</h3>
+    <label class="field"><span class="lbl">Data</span><input type="date" id="testDate"></label>
+    <div class="grid2">
+      <label class="field"><span class="lbl">Barra fixa (reps)</span><input type="number" id="testBarra"></label>
+      <label class="field"><span class="lbl">Paralelas (reps)</span><input type="number" id="testParalelas"></label>
+    </div>
+    <div class="grid2">
+      <label class="field"><span class="lbl">Agacho — carga (kg)</span><input type="number" id="testAgachoKg"></label>
+      <label class="field"><span class="lbl">Terra — carga (kg)</span><input type="number" id="testTerraKg"></label>
+    </div>
+    <div class="grid2">
+      <label class="field"><span class="lbl">Rodinha (reps)</span><input type="number" id="testRodinha"></label>
+      <label class="field"><span class="lbl">Farmer hold (segundos)</span><input type="number" id="testFarmerSec"></label>
+    </div>
+    <label class="field"><span class="lbl">Farmer hold — % do peso corporal por mão</span><input type="number" id="testFarmerPct" placeholder="ex: 50"></label>
+    <button class="btn" onclick="saveTest()">Salvar teste</button>
+  </div>
+
+  <div class="card">
+    <h3><span class="n">//</span>Histórico de testes</h3>
+    <div id="testHistory"><div class="hist-empty">Nenhum teste registrado ainda.</div></div>
+  </div>
+</section>
+
+<!-- ================= TREINO ================= -->
+<section class="section" id="sec-treino">
+  <div class="section-title">Programa Ativo</div>
+  <div class="section-sub">Escolha o nível e a frequência.</div>
+
+  <p class="muted" style="margin-bottom:6px;">Nível do programa</p>
+  <div class="program-select" id="levelSelect">
+    <div class="chip" data-level="iniciante">Iniciante</div>
+    <div class="chip" data-level="intermediario">Intermediário</div>
+    <div class="chip" data-level="avancado">Avançado</div>
+  </div>
+  <p class="muted" style="margin-bottom:6px;">Frequência semanal</p>
+  <div class="program-select" id="freqSelect">
+    <div class="chip" data-freq="3x">3x / semana</div>
+    <div class="chip" data-freq="4x">4x / semana</div>
+  </div>
+
+  <div id="programDays"></div>
+</section>
+
+<!-- ================= CARGAS ================= -->
+<section class="section" id="sec-cargas">
+  <div class="section-title">Log de Cargas</div>
+  <div class="section-sub">Registre o que você fez hoje, exercício por exercício.</div>
+
+  <div class="card">
+    <h3><span class="n">//</span>Novo registro</h3>
+    <label class="field"><span class="lbl">Data</span><input type="date" id="loadDate"></label>
+    <label class="field"><span class="lbl">Exercício</span>
+      <select id="loadExercise">
+        <option>Agachamento livre</option>
+        <option>Supino reto</option>
+        <option>Remada curvada</option>
+        <option>Levantamento terra</option>
+        <option>Barra fixa</option>
+        <option>Paralelas</option>
+        <option>Desenvolvimento de ombros</option>
+        <option>Stiff</option>
+        <option>Farmer walk</option>
+        <option>Ab wheel</option>
+        <option>Outro</option>
+      </select>
+    </label>
+    <div class="grid3">
+      <label class="field"><span class="lbl">Carga (kg)</span><input type="number" id="loadWeight"></label>
+      <label class="field"><span class="lbl">Séries</span><input type="number" id="loadSets"></label>
+      <label class="field"><span class="lbl">Reps</span><input type="number" id="loadReps"></label>
+    </div>
+    <label class="field"><span class="lbl">RPE / sensação (1–10, opcional)</span><input type="number" id="loadRpe" min="1" max="10"></label>
+    <button class="btn" onclick="saveLoad()">Salvar registro</button>
+  </div>
+
+  <div class="card">
+    <h3><span class="n">//</span>Histórico por exercício</h3>
+    <label class="field"><span class="lbl">Filtrar exercício</span>
+      <select id="loadFilter" onchange="renderLoads()"><option value="all">Todos</option></select>
+    </label>
+    <div id="loadHistory"><div class="hist-empty">Nenhum registro ainda.</div></div>
+  </div>
+</section>
+
+<!-- ================= HIIT ================= -->
+<section class="section" id="sec-hiit">
+  <div class="section-title">HIIT Broca — Tabata</div>
+  <div class="section-sub">10 rounds · 8–12 min · 2x por semana · curto, violento, controlado.</div>
+
+  <div class="hiit-format">
+    <div><div class="num">20s</div><div class="lbl">ON</div></div>
+    <div><div class="num">40s</div><div class="lbl">OFF</div></div>
+    <div><div class="num">10x</div><div class="lbl">Rounds</div></div>
+  </div>
+
+  <div class="hiit-card">
+    <h3>Opção 1 — Airbike Tabata</h3>
+    <p class="body">10 rounds: 20s intensidade máxima / 40s pedal leve. Cadência máxima, sem morrer antes do round 6. Ideal quando quer intensidade sem impacto.</p>
+  </div>
+  <div class="hiit-card">
+    <h3>Opção 2 — Sprawls Tabata</h3>
+    <p class="body">10 rounds: 20s sprawls intensidade máxima / 40s descanso total. Core firme, lombar neutra, sem colapsar no chão. Corpo inteiro, transferência real.</p>
+  </div>
+  <div class="hiit-card">
+    <h3>Opção 3 — Tiro de Corrida Tabata</h3>
+    <p class="body">10 rounds: 20s corrida forte / 40s caminhada. Passada curta, postura ereta, sem frear com o calcanhar. Explosão simples e honesta.</p>
+  </div>
+
+  <button class="btn" onclick="markHiitToday()">Marcar HIIT feito hoje</button>
+</section>
+
+<!-- ================= CALENDARIO ================= -->
+<section class="section" id="sec-calendario">
+  <div class="section-title">Calendário</div>
+  <div class="section-sub">Acompanhamento de execução.</div>
+
+  <div class="cal-head">
+    <button onclick="calShift(-1)">‹</button>
+    <div class="month" id="calMonthLabel"></div>
+    <button onclick="calShift(1)">›</button>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <div class="cal-legend">
+    <span><span class="dot" style="background:var(--ember)"></span>Treino de força</span>
+    <span><span class="dot" style="background:#5b9de0"></span>HIIT</span>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* ---------- STORAGE HELPERS ---------- */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('broca_'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ localStorage.setItem('broca_'+k, JSON.stringify(v)); }
+};
+
+/* ---------- TABS ---------- */
+document.getElementById('tabNav').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+btn.dataset.tab).classList.add('active');
+});
+
+/* ---------- ACCORDION ---------- */
+document.querySelectorAll('.acc-head').forEach(h=>{
+  h.addEventListener('click', ()=>{
+    const item = h.parentElement;
+    item.classList.toggle('open');
+    const body = item.querySelector('.acc-body');
+    body.style.maxHeight = item.classList.contains('open') ? body.scrollHeight+'px' : '0';
+  });
+});
+document.querySelectorAll('.acc-item.open .acc-body').forEach(b=>{ b.style.maxHeight = b.scrollHeight+'px'; });
+
+/* ---------- LEVEL SYSTEM ---------- */
+const LEVEL_ORDER = ['recruta','operador','veterano','broca','shape','matador'];
+const LEVEL_LABEL = {recruta:'Recruta', operador:'Operador', veterano:'Veterano', broca:'Broca', shape:'Shape de Geladeira', matador:'Matador de Urso'};
+const REQ = {
+  operador: {barra:4, paralelas:6, agachoBW:1, terraBW:1, rodinha:6, farmerSec:20, farmerPct:25},
+  veterano: {barra:10, paralelas:15, agachoBW:1.2, terraBW:1.5, rodinha:13, farmerSec:40, farmerPct:50},
+  broca:    {barra:12, paralelas:18, agachoBW:1.5, terraBW:2,   rodinha:20, farmerSec:60, farmerPct:50},
+  shape:    {barra:15, paralelas:30, agachoBW:1.8, terraBW:2.2, rodinha:30, farmerSec:120, farmerPct:50},
+  matador:  {barra:20, paralelas:40, agachoBW:2,   terraBW:2.5, rodinha:50, farmerSec:180, farmerPct:50}
+};
+const EXERCISES = [
+  {key:'barra', label:'Barra fixa', unit:'reps'},
+  {key:'paralelas', label:'Paralelas', unit:'reps'},
+  {key:'agacho', label:'Agachamento', unit:'xBW'},
+  {key:'terra', label:'Terra', unit:'xBW'},
+  {key:'rodinha', label:'Rodinha', unit:'reps'},
+  {key:'farmer', label:'Farmer hold', unit:'s'}
+];
+
+function latestTest(){
+  const tests = store.get('tests', []);
+  if(tests.length===0) return null;
+  return tests[tests.length-1];
+}
+
+function exerciseLevelReached(exKey, test, bw){
+  // returns index into LEVEL_ORDER of highest level this single exercise satisfies
+  let reached = 0;
+  for(let i=1;i<LEVEL_ORDER.length;i++){
+    const lvl = LEVEL_ORDER[i];
+    const r = REQ[lvl];
+    let val, req;
+    if(exKey==='barra'){ val=test.barra; req=r.barra; }
+    else if(exKey==='paralelas'){ val=test.paralelas; req=r.paralelas; }
+    else if(exKey==='rodinha'){ val=test.rodinha; req=r.rodinha; }
+    else if(exKey==='agacho'){ val = bw ? (test.agachoKg/bw) : 0; req=r.agachoBW; }
+    else if(exKey==='terra'){ val = bw ? (test.terraKg/bw) : 0; req=r.terraBW; }
+    else if(exKey==='farmer'){ val = (test.farmerPct>=r.farmerPct) ? test.farmerSec : 0; req=r.farmerSec; }
+    if(val>=req){ reached = i; } else { break; }
+  }
+  return reached;
+}
+
+function computeLevels(){
+  const test = latestTest();
+  const bw = parseFloat(store.get('bw', null));
+  const result = {test, bw, perExercise:{}, overallIndex:0, bottleneck:null};
+  if(!test){ return result; }
+  let minIdx = LEVEL_ORDER.length-1;
+  let bottleneckEx = null;
+  EXERCISES.forEach(ex=>{
+    const idx = exerciseLevelReached(ex.key, test, bw);
+    result.perExercise[ex.key] = idx;
+    if(idx < minIdx){ minIdx = idx; bottleneckEx = ex.label; }
+  });
+  result.overallIndex = minIdx;
+  result.bottleneck = bottleneckEx;
+  return result;
+}
+
+function renderNivel(){
+  const r = computeLevels();
+  const bwStored = store.get('bw', '');
+  document.getElementById('bwInput').value = bwStored || '';
+  document.getElementById('overallLevel').textContent = LEVEL_LABEL[LEVEL_ORDER[r.overallIndex]];
+  document.getElementById('headerLevel').textContent = LEVEL_LABEL[LEVEL_ORDER[r.overallIndex]];
+
+  const bnText = document.getElementById('bottleneckText');
+  if(!r.test){
+    bnText.innerHTML = 'Faça seu primeiro teste na aba Testes.';
+  } else if(r.overallIndex === LEVEL_ORDER.length-1){
+    bnText.innerHTML = 'Nível máximo do sistema atingido em todos os exercícios.';
+  } else {
+    const nextLevel = LEVEL_LABEL[LEVEL_ORDER[r.overallIndex+1]];
+    bnText.innerHTML = `Travado por <b>${r.bottleneck}</b> — próximo alvo: <b>${nextLevel}</b>`;
+  }
+
+  // gauges
+  const wrap = document.getElementById('gaugesWrap');
+  wrap.innerHTML = '';
+  EXERCISES.forEach(ex=>{
+    const idx = r.test ? r.perExercise[ex.key] : 0;
+    const row = document.createElement('div');
+    row.className = 'gauge-row';
+    let valDisplay = '—';
+    if(r.test){
+      if(ex.key==='agacho') valDisplay = r.bw ? (r.test.agachoKg/r.bw).toFixed(2)+'x BW' : r.test.agachoKg+' kg';
+      else if(ex.key==='terra') valDisplay = r.bw ? (r.test.terraKg/r.bw).toFixed(2)+'x BW' : r.test.terraKg+' kg';
+      else if(ex.key==='farmer') valDisplay = r.test.farmerSec+'s @ '+r.test.farmerPct+'%BW';
+      else valDisplay = r.test[ex.key]+' reps';
+    }
+    row.innerHTML = `
+      <div class="gauge-label"><span class="name">${ex.label}</span><span class="val">${valDisplay}</span></div>
+      <div class="gauge-track">${LEVEL_ORDER.slice(1).map((lvl,i)=>{
+        let cls='gauge-seg';
+        if(i < idx) cls+=' done';
+        else if(i === idx && r.test) cls+=' current';
+        return `<div class="${cls}"></div>`;
+      }).join('')}</div>
+      <div class="gauge-levels">${LEVEL_ORDER.slice(1).map(l=>`<span>${LEVEL_LABEL[l].split(' ')[0]}</span>`).join('')}</div>
+    `;
+    wrap.appendChild(row);
+  });
+
+  // requirement table
+  const reqTable = document.getElementById('reqTable');
+  reqTable.innerHTML = LEVEL_ORDER.slice(1).map(lvl=>{
+    const r2 = REQ[lvl];
+    return `<div class="hist-row"><span class="exercise">${LEVEL_LABEL[lvl]}</span><span class="metric mono" style="text-align:right;font-size:11.5px;">${r2.barra}·${r2.paralelas}·${r2.agachoBW}x·${r2.terraBW}x·${r2.rodinha}·${r2.farmerSec}s@${r2.farmerPct}%</span></div>`;
+  }).join('');
+}
+
+document.getElementById('bwInput').addEventListener('change', e=>{
+  store.set('bw', e.target.value);
+  renderNivel();
+});
+
+/* ---------- TESTES ---------- */
+function saveTest(){
+  const date = document.getElementById('testDate').value || new Date().toISOString().slice(0,10);
+  const t = {
+    date,
+    barra: parseFloat(document.getElementById('testBarra').value)||0,
+    paralelas: parseFloat(document.getElementById('testParalelas').value)||0,
+    agachoKg: parseFloat(document.getElementById('testAgachoKg').value)||0,
+    terraKg: parseFloat(document.getElementById('testTerraKg').value)||0,
+    rodinha: parseFloat(document.getElementById('testRodinha').value)||0,
+    farmerSec: parseFloat(document.getElementById('testFarmerSec').value)||0,
+    farmerPct: parseFloat(document.getElementById('testFarmerPct').value)||0
+  };
+  const tests = store.get('tests', []);
+  tests.push(t);
+  tests.sort((a,b)=> a.date.localeCompare(b.date));
+  store.set('tests', tests);
+  ['testBarra','testParalelas','testAgachoKg','testTerraKg','testRodinha','testFarmerSec','testFarmerPct'].forEach(id=>document.getElementById(id).value='');
+  renderTestHistory();
+  renderNivel();
+}
+
+function renderTestHistory(){
+  const tests = store.get('tests', []);
+  const el = document.getElementById('testHistory');
+  if(tests.length===0){ el.innerHTML = '<div class="hist-empty">Nenhum teste registrado ainda.</div>'; return; }
+  const last = tests[tests.length-1];
+  const lastDate = new Date(last.date+'T00:00:00');
+  const nextMin = new Date(lastDate); nextMin.setDate(nextMin.getDate()+56);
+  const nextMax = new Date(lastDate); nextMax.setDate(nextMax.getDate()+84);
+  const fmt = d => d.toLocaleDateString('pt-BR');
+  el.innerHTML = `<p class="muted" style="margin-bottom:10px;">Próximo reteste sugerido: ${fmt(nextMin)} – ${fmt(nextMax)}</p>` +
+    tests.slice().reverse().map(t=>`
+      <div class="hist-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <span class="date">${fmt(new Date(t.date+'T00:00:00'))}</span>
+        <span class="metric" style="font-size:12.5px;">Barra ${t.barra} · Paralelas ${t.paralelas} · Agacho ${t.agachoKg}kg · Terra ${t.terraKg}kg · Rodinha ${t.rodinha} · Farmer ${t.farmerSec}s@${t.farmerPct}%</span>
+      </div>
+    `).join('');
+}
+
+/* ---------- PROGRAMA ---------- */
+const PROGRAMS = {
+  iniciante:{ '3x':[
+    {letter:'A', tag:'', ex:[['Agachamento livre','5×5'],['Supino reto','5×5'],['Remada curvada','4×8'],['Abdominal remador','3×15–20']]},
+    {letter:'B', tag:'', ex:[['Levantamento terra','5×3'],['Barra fixa (assistida/elástico)','5×3–6'],['Desenvolvimento de ombros','4×6'],['Prancha','3×30–45s']]},
+    {letter:'C', tag:'', ex:[['Agachamento frontal/goblet','4×6–8'],['Paralelas (assistida)','4×6–10'],['Stiff','4×8'],['Abdominal remador','3×10']]}
+  ]},
+  intermediario:{
+    '3x':[
+      {letter:'A', tag:'Base', ex:[['Agachamento livre','5×5'],['Supino reto','5×5'],['Remada curvada','5×6'],['Ab wheel','4×10']]},
+      {letter:'B', tag:'Puxar + Terra', ex:[['Levantamento terra','5×3'],['Barra fixa','6×máx reps boas'],['Desenvolvimento de ombros','5×5'],['Farmer hold','4×30–40s']]},
+      {letter:'C', tag:'Relativa + Posterior', ex:[['Agachamento frontal','5×5'],['Paralelas','5×6–10'],['Stiff','5×6–8'],['Side plank','3×30s/lado']]}
+    ],
+    '4x':[
+      {letter:'A', tag:'Agachar + Empurrar', ex:[['Agachamento livre','5×5'],['Supino reto','5×5'],['Ab remador','4×20']]},
+      {letter:'B', tag:'Puxar + Ombro', ex:[['Barra fixa','6×'],['Remada curvada','5×6'],['Desenvolvimento','5×5']]},
+      {letter:'C', tag:'Terra + Posterior', ex:[['Levantamento terra','5×3'],['Stiff','5×6–8'],['Ab wheel','4×10']]},
+      {letter:'D', tag:'Força Relativa', ex:[['Paralelas','6×'],['Agachamento frontal','4×6'],['Farmer walk','6×20–30m']]}
+    ]
+  },
+  avancado:{
+    '3x':[
+      {letter:'A', tag:'Força Máxima', ex:[['Agachamento livre','6×3'],['Supino reto','6×3'],['Remada curvada','5×5'],['Ab wheel com carga','4×8']]},
+      {letter:'B', tag:'Terra Pesado', ex:[['Levantamento terra','6×2'],['Barra fixa com carga','5×4–6'],['Desenvolvimento militar','5×4'],['Farmer walk pesado','6×30m']]},
+      {letter:'C', tag:'Relativa Pesada', ex:[['Agachamento frontal','5×3'],['Paralelas com carga','5×5'],['Stiff','5×5'],['Ab wheel com carga','4×8']]}
+    ],
+    '4x':[
+      {letter:'A', tag:'Agachamento Pesado', ex:[['Agachamento livre','6×3'],['Supino reto','6×3']]},
+      {letter:'B', tag:'Puxar Pesado', ex:[['Barra fixa com carga','6×4'],['Remada curvada','5×5']]},
+      {letter:'C', tag:'Terra Pesado', ex:[['Levantamento terra','6×2'],['Stiff','5×5']]},
+      {letter:'D', tag:'Relativa + Core', ex:[['Paralelas com carga','6×5'],['Farmer walk pesado','6×30m'],['Ab wheel com carga','4×8']]}
+    ]
+  }
+};
+
+function renderProgram(){
+  const level = store.get('progLevel','iniciante');
+  let freq = store.get('progFreq','3x');
+  if(level==='iniciante') freq = '3x';
+  document.querySelectorAll('#levelSelect .chip').forEach(c=>c.classList.toggle('active', c.dataset.level===level));
+  document.querySelectorAll('#freqSelect .chip').forEach(c=>{
+    const is4avail = level!=='iniciante';
+    c.style.opacity = (c.dataset.freq==='4x' && !is4avail) ? '0.35' : '1';
+    c.style.pointerEvents = (c.dataset.freq==='4x' && !is4avail) ? 'none' : 'auto';
+    c.classList.toggle('active', c.dataset.freq===freq);
+  });
+
+  const days = PROGRAMS[level][freq] || PROGRAMS[level]['3x'];
+  const today = new Date().toISOString().slice(0,10);
+  const checklist = store.get('checklist', {});
+  const wrap = document.getElementById('programDays');
+  wrap.innerHTML = days.map((d,i)=>{
+    const checkKey = today+'_'+level+'_'+freq+'_'+d.letter;
+    const checked = !!checklist[checkKey];
+    return `
+    <div class="day-card">
+      <div class="day-head">
+        <div><span class="letter">${d.letter}</span> ${d.tag?`<span class="tag">${d.tag}</span>`:''}</div>
+        <div class="day-check ${checked?'checked':''}" data-key="${checkKey}"></div>
+      </div>
+      ${d.ex.map(e=>`<div class="ex-row"><span class="exn">${e[0]}</span><span class="exs">${e[1]}</span></div>`).join('')}
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('.day-check').forEach(chk=>{
+    chk.addEventListener('click', ()=>{
+      const key = chk.dataset.key;
+      const cl = store.get('checklist', {});
+      cl[key] = !cl[key];
+      store.set('checklist', cl);
+      chk.classList.toggle('checked');
+      if(cl[key]) markCalendarDay(today, 'forca');
+    });
+  });
+}
+
+document.getElementById('levelSelect').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  store.set('progLevel', chip.dataset.level);
+  renderProgram();
+});
+document.getElementById('freqSelect').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip'); if(!chip || chip.style.pointerEvents==='none') return;
+  store.set('progFreq', chip.dataset.freq);
+  renderProgram();
+});
+
+/* ---------- CARGAS ---------- */
+function saveLoad(){
+  const l = {
+    date: document.getElementById('loadDate').value || new Date().toISOString().slice(0,10),
+    exercise: document.getElementById('loadExercise').value,
+    weight: parseFloat(document.getElementById('loadWeight').value)||0,
+    sets: parseFloat(document.getElementById('loadSets').value)||0,
+    reps: parseFloat(document.getElementById('loadReps').value)||0,
+    rpe: document.getElementById('loadRpe').value || ''
+  };
+  const loads = store.get('loads', []);
+  loads.push(l);
+  store.set('loads', loads);
+  ['loadWeight','loadSets','loadReps','loadRpe'].forEach(id=>document.getElementById(id).value='');
+  renderLoads();
+}
+
+function renderLoads(){
+  const loads = store.get('loads', []);
+  const filterSel = document.getElementById('loadFilter');
+  const existing = new Set(Array.from(filterSel.options).map(o=>o.value));
+  [...new Set(loads.map(l=>l.exercise))].forEach(ex=>{
+    if(!existing.has(ex)){ const o=document.createElement('option'); o.value=ex; o.textContent=ex; filterSel.appendChild(o); }
+  });
+  const filter = filterSel.value;
+  const list = loads.filter(l=> filter==='all' || l.exercise===filter).slice().reverse();
+  const el = document.getElementById('loadHistory');
+  if(list.length===0){ el.innerHTML = '<div class="hist-empty">Nenhum registro ainda.</div>'; return; }
+  const fmt = d => new Date(d+'T00:00:00').toLocaleDateString('pt-BR');
+  el.innerHTML = list.map(l=>`
+    <div class="hist-row">
+      <div><div class="exercise">${l.exercise}</div><div class="date">${fmt(l.date)}</div></div>
+      <div class="metric">${l.weight}kg · ${l.sets}×${l.reps}${l.rpe?' · RPE '+l.rpe:''}</div>
+    </div>
+  `).join('');
+}
+
+/* ---------- HIIT ---------- */
+function markHiitToday(){
+  const today = new Date().toISOString().slice(0,10);
+  markCalendarDay(today, 'hiit');
+  alert('HIIT marcado no calendário de hoje.');
+}
+
+/* ---------- CALENDARIO ---------- */
+let calCursor = new Date();
+function markCalendarDay(dateStr, type){
+  const cal = store.get('calendar', {});
+  if(!cal[dateStr]) cal[dateStr] = [];
+  if(!cal[dateStr].includes(type)) cal[dateStr].push(type);
+  store.set('calendar', cal);
+  renderCalendar();
+}
+function calShift(n){ calCursor.setMonth(calCursor.getMonth()+n); renderCalendar(); }
+function renderCalendar(){
+  const cal = store.get('calendar', {});
+  const y = calCursor.getFullYear(), m = calCursor.getMonth();
+  const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  document.getElementById('calMonthLabel').textContent = monthNames[m]+' '+y;
+  const first = new Date(y,m,1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = ['D','S','T','Q','Q','S','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++){ grid.innerHTML += '<div class="cal-day empty"></div>'; }
+  const todayStr = new Date().toISOString().slice(0,10);
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const entries = cal[dateStr] || [];
+    const isToday = dateStr===todayStr;
+    grid.innerHTML += `<div class="cal-day" style="${isToday?'border-color:var(--ember)':''}" data-date="${dateStr}">
+      ${d}
+      <div class="dots">${entries.map(t=>`<div class="dot ${t}"></div>`).join('')}</div>
+    </div>`;
+  }
+  grid.querySelectorAll('.cal-day:not(.empty)').forEach(day=>{
+    day.addEventListener('click', ()=>{
+      const dateStr = day.dataset.date;
+      const cal2 = store.get('calendar', {});
+      const entries = cal2[dateStr] || [];
+      if(entries.length===0){ cal2[dateStr]=['forca']; }
+      else if(entries.length===1 && entries[0]==='forca'){ cal2[dateStr]=['hiit']; }
+      else if(entries.length===1 && entries[0]==='hiit'){ cal2[dateStr]=['forca','hiit']; }
+      else { delete cal2[dateStr]; }
+      store.set('calendar', cal2);
+      renderCalendar();
+    });
+  });
+}
+
+/* ---------- INIT ---------- */
+document.getElementById('testDate').valueAsDate = new Date();
+document.getElementById('loadDate').valueAsDate = new Date();
+renderNivel();
+renderTestHistory();
+renderProgram();
+renderLoads();
+renderCalendar();
+</script>
+</body>
+</html>
