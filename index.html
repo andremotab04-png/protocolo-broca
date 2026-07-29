@@ -162,6 +162,18 @@ input:focus,select:focus{outline:none;border-color:var(--ember);}
 .hist-row .exercise{color:var(--text);}
 .hist-row .metric{color:var(--ember);font-family:'IBM Plex Mono';}
 .hist-empty{color:var(--text-dim);font-size:13.5px;text-align:center;padding:16px 0;}
+.del-btn{
+  position:absolute;top:8px;right:0;background:none;border:none;color:var(--text-dim);
+  font-size:14px;cursor:pointer;padding:4px 6px;line-height:1;
+}
+.del-btn:hover{color:var(--danger);}
+.backup-row{display:flex;gap:10px;margin-top:6px;}
+.backup-row .btn{margin-top:0;}
+.file-btn{
+  display:block;width:100%;text-align:center;background:none;border:1px solid var(--border);
+  color:var(--text-dim);font-family:'Teko';font-size:19px;letter-spacing:0.04em;text-transform:uppercase;
+  border-radius:8px;padding:12px;cursor:pointer;
+}
 
 /* program */
 .program-select{display:flex;gap:8px;margin-bottom:16px;}
@@ -501,6 +513,16 @@ input:focus,select:focus{outline:none;border-color:var(--ember);}
     <span><span class="dot" style="background:var(--ember)"></span>Treino de força</span>
     <span><span class="dot" style="background:#5b9de0"></span>HIIT</span>
   </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h3><span class="n">//</span>Backup de dados</h3>
+    <p class="muted" style="margin-bottom:10px;">Exporte antes de remover o atalho da tela inicial no iPhone — reinstalar o app apaga os dados salvos no navegador. Importe o backup depois de readicionar.</p>
+    <div class="backup-row">
+      <button class="btn" onclick="exportData()">Exportar backup</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(event)">
+    <button class="file-btn" style="margin-top:10px;" onclick="document.getElementById('importFile').click()">Importar backup</button>
+  </div>
 </section>
 
 </main>
@@ -681,12 +703,24 @@ function renderTestHistory(){
   const nextMax = new Date(lastDate); nextMax.setDate(nextMax.getDate()+84);
   const fmt = d => d.toLocaleDateString('pt-BR');
   el.innerHTML = `<p class="muted" style="margin-bottom:10px;">Próximo reteste sugerido: ${fmt(nextMin)} – ${fmt(nextMax)}</p>` +
-    tests.slice().reverse().map(t=>`
-      <div class="hist-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+    tests.slice().reverse().map((t,ri)=>{
+      const realIdx = tests.length-1-ri;
+      return `
+      <div class="hist-row" style="flex-direction:column;align-items:flex-start;gap:4px;position:relative;">
+        <button class="del-btn" onclick="deleteTest(${realIdx})" title="Excluir">✕</button>
         <span class="date">${fmt(new Date(t.date+'T00:00:00'))}</span>
-        <span class="metric" style="font-size:12.5px;">Barra ${t.barra} · Paralelas ${t.paralelas} · Agacho ${t.agachoKg}kg · Terra ${t.terraKg}kg · Rodinha ${t.rodinha} · Farmer ${t.farmerSec}s@${t.farmerPct}%</span>
-      </div>
-    `).join('');
+        <span class="metric" style="font-size:12.5px;padding-right:24px;">Barra ${t.barra} · Paralelas ${t.paralelas} · Agacho ${t.agachoKg}kg · Terra ${t.terraKg}kg · Rodinha ${t.rodinha} · Farmer ${t.farmerSec}s@${t.farmerPct}%</span>
+      </div>`;
+    }).join('');
+}
+
+function deleteTest(idx){
+  if(!confirm('Excluir este teste do histórico?')) return;
+  const tests = store.get('tests', []);
+  tests.splice(idx,1);
+  store.set('tests', tests);
+  renderTestHistory();
+  renderNivel();
 }
 
 /* ---------- PROGRAMA ---------- */
@@ -805,12 +839,25 @@ function renderLoads(){
   const el = document.getElementById('loadHistory');
   if(list.length===0){ el.innerHTML = '<div class="hist-empty">Nenhum registro ainda.</div>'; return; }
   const fmt = d => new Date(d+'T00:00:00').toLocaleDateString('pt-BR');
-  el.innerHTML = list.map(l=>`
-    <div class="hist-row">
+  el.innerHTML = list.map(l=>{
+    const realIdx = loads.indexOf(l);
+    return `
+    <div class="hist-row" style="position:relative;">
       <div><div class="exercise">${l.exercise}</div><div class="date">${fmt(l.date)}</div></div>
-      <div class="metric">${l.weight}kg · ${l.sets}×${l.reps}${l.rpe?' · RPE '+l.rpe:''}</div>
-    </div>
-  `).join('');
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="metric">${l.weight}kg · ${l.sets}×${l.reps}${l.rpe?' · RPE '+l.rpe:''}</div>
+        <button class="del-btn" style="position:static;" onclick="deleteLoad(${realIdx})" title="Excluir">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteLoad(idx){
+  if(!confirm('Excluir este registro?')) return;
+  const loads = store.get('loads', []);
+  loads.splice(idx,1);
+  store.set('loads', loads);
+  renderLoads();
 }
 
 /* ---------- HIIT ---------- */
@@ -864,6 +911,45 @@ function renderCalendar(){
       renderCalendar();
     });
   });
+}
+
+/* ---------- BACKUP ---------- */
+function exportData(){
+  const data = {};
+  for(let i=0;i<localStorage.length;i++){
+    const key = localStorage.key(i);
+    if(key.startsWith('broca_')){ data[key] = localStorage.getItem(key); }
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `protocolo-broca-backup-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      Object.keys(data).forEach(key=>{
+        if(key.startsWith('broca_')){ localStorage.setItem(key, data[key]); }
+      });
+      alert('Backup importado com sucesso.');
+      renderNivel(); renderTestHistory(); renderProgram(); renderLoads(); renderCalendar();
+    }catch(err){
+      alert('Arquivo inválido. Verifique se é um backup exportado deste app.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 /* ---------- INIT ---------- */
